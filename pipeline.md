@@ -11,3 +11,6 @@ Build dataset
 Train machine learning model
    ↓
 Evaluate and explain results
+
+
+Lichess Games Database: https://database.lichess.org/
