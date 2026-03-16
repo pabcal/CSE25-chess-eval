@@ -1,5 +1,27 @@
+# virtual environment
 .venv/
+
+# python cache
 __pycache__/
+*.pyc
+
+# jupyter
 .ipynb_checkpoints/
+
+# ignore data files but keep folder structure
 data/raw/*
 data/processed/*
+
+# keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# mac / windows junk
+.DS_Store
+Thumbs.db
+
+# environment files
+.env
+
+# models
+models/*
