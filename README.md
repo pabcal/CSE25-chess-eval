@@ -5,9 +5,9 @@ CSE25 class project.
 
 ---
 
-# Quick Start (Recommended)
+# Setup Instructions
+Do the following the setup the project.
 
-Run these commands after cloning the repo.
 
 ### Windows PowerShell
 git clone https://github.com/pabcal/CSE25-chess-eval.git
@@ -21,6 +21,7 @@ pip install -r requirements.txt
 
 ### Mac / Linux
 git clone https://github.com/pabcal/CSE25-chess-eval.git
+cd CSE25-chess-eval
 
 python3 -m venv .venv
 source .venv/bin/activate
