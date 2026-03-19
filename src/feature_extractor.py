@@ -25,11 +25,18 @@ def material_balance(board):
     return white - black
 
 
+# Function that returns the difference in number of legal moves between White and Black
 def mobility(board):
-    white_moves = board.legal_moves.count()
+
+    original_turn = board.turn   # Stores the current turn (White or Black)
     
-    board.turn = False
+    # Manually switches the turn to count legal moves
+    board.turn = chess.WHITE
+    white_moves = board.legal_moves.count()
+
+    board.turn = chess.BLACK
     black_moves = board.legal_moves.count()
-    board.turn = True
+    
+    board.turn = original_turn  # Resets the original turn/position
     
     return white_moves - black_moves
