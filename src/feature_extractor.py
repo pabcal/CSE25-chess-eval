@@ -1,5 +1,6 @@
 import chess
 
+# Dictionary storing pieces abbreviations and values
 piece_values = {
     "p": 1,
     "n": 3,
@@ -10,6 +11,10 @@ piece_values = {
 }
 
 def material_balance(board):
+    """
+    Function that computes the total material count
+    for both sides and returns the difference
+    """
     white = 0
     black = 0
 
@@ -29,20 +34,25 @@ def center_control(board):
     Computes the number of attacks on center squares (d4, e4, d5, e5)
     for both sides and returns the difference.
     """
+
+    #  List that stores all the center squares
     center_squares = [chess.D4, chess.E4, chess.D5, chess.E5]
     
     white_attacks = 0
     black_attacks = 0
 
     for square in center_squares:
+        # board.attackers(Color, square) calculates number of color attackers on a square
         white_attacks += len(board.attackers(chess.WHITE, square))
         black_attacks += len(board.attackers(chess.BLACK, square))
 
     return white_attacks - black_attacks
 
-# Function that returns the difference in number of legal moves between White and Black
 def mobility(board):
-
+    """
+    Function that returns the difference in
+    number of legal moves between White and Black
+    """
     original_turn = board.turn   # Stores the current turn (White or Black)
     
     # Manually switches the turn to count legal moves
