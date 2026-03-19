@@ -252,3 +252,62 @@ def passed_pawns(board):
     white_passed = sum(1 for sq in white_pawns if is_white_passed(sq))
     black_passed = sum(1 for sq in black_pawns if is_black_passed(sq))
     return white_passed - black_passed
+
+def king_safety(board):
+    """
+    Calculates king safety as a
+    result of castling status + pawn shield
+    Positive -> White king is safer
+    Negative -> Black king is safer
+    """
+    def safety_score(color):
+        king_sq = board.king(color)
+        king_file = chess.square_file(king_sq)
+        king_rank = chess.square_rank(king_sq)
+
+        # Castling status: king moved off e-file and has no castling rights
+        castled = (king_file != 4) and not board.has_castling_rights(color)
+        castle_score = 1 if castled else 0
+
+        # Pawn shield: count pawns directly in front of king (3 squares)
+        # Left, middle, right
+        pawn_shield = 0
+        direction = 1 if color == chess.WHITE else -1
+        for df in [-1, 0, 1]:
+            f = king_file + df
+            r = king_rank + direction
+            if 0 <= f <= 7 and 0 <= r <= 7:
+                sq = chess.square(f, r)
+                if board.piece_type_at(sq) == chess.PAWN and board.color_at(sq) == color:
+                    pawn_shield += 1
+
+        return castle_score + pawn_shield
+    return safety_score(chess.WHITE) - safety_score(chess.BLACK)
+
+def extract_features(board):
+    """
+    Extract features for training/evaluation
+    """
+    return {
+        "material": material_balance(board),
+        "center": center_control(board),
+        "mobility": mobility(board),
+        "tactical": tactical_pressure(board),
+        "doubled": doubled_pawns(board),
+        "isolated": isolated_pawns(board),
+        "passed": passed_pawns(board),
+        "king_safety": king_safety(board),
+    }
+
+def extract_move_features(board, move):
+    """
+    Extract and computer the feature difference before and after a move
+    """
+    before = extract_features(board)
+    board.push(move)
+
+    after = extract_features(board)
+    board.pop()
+
+    feat_diff = {feat: after[feat] - before[feat] for feat in before}
+    return feat_diff

@@ -25,3 +25,6 @@ Thumbs.db
 
 # models
 models/*
+
+# engine/stockfish
+stockfish/
