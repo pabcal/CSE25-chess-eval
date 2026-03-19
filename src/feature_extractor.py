@@ -39,3 +39,19 @@ def center_control(board):
         black_attacks += len(board.attackers(chess.BLACK, square))
 
     return white_attacks - black_attacks
+
+# Function that returns the difference in number of legal moves between White and Black
+def mobility(board):
+
+    original_turn = board.turn   # Stores the current turn (White or Black)
+    
+    # Manually switches the turn to count legal moves
+    board.turn = chess.WHITE
+    white_moves = board.legal_moves.count()
+
+    board.turn = chess.BLACK
+    black_moves = board.legal_moves.count()
+    
+    board.turn = original_turn  # Resets the original turn/position
+    
+    return white_moves - black_moves
