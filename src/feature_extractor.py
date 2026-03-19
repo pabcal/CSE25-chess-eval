@@ -23,3 +23,13 @@ def material_balance(board):
             black += value
 
     return white - black
+
+
+def mobility(board):
+    white_moves = board.legal_moves.count()
+    
+    board.turn = False
+    black_moves = board.legal_moves.count()
+    board.turn = True
+    
+    return white_moves - black_moves
