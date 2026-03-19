@@ -24,6 +24,21 @@ def material_balance(board):
 
     return white - black
 
+def center_control(board):
+    """
+    Computes the number of attacks on center squares (d4, e4, d5, e5)
+    for both sides and returns the difference.
+    """
+    center_squares = [chess.D4, chess.E4, chess.D5, chess.E5]
+    
+    white_attacks = 0
+    black_attacks = 0
+
+    for square in center_squares:
+        white_attacks += len(board.attackers(chess.WHITE, square))
+        black_attacks += len(board.attackers(chess.BLACK, square))
+
+    return white_attacks - black_attacks
 
 # Function that returns the difference in number of legal moves between White and Black
 def mobility(board):
