@@ -1,13 +1,13 @@
 import chess
 
 # Dictionary storing pieces abbreviations and values
-piece_values = {
-    "p": 1,
-    "n": 3,
-    "b": 3,
-    "r": 5,
-    "q": 9,
-    "k": 0
+PIECE_VALUES = {
+    chess.PAWN: 1,
+    chess.KNIGHT: 3,
+    chess.BISHOP: 3,
+    chess.ROOK: 5,
+    chess.QUEEN: 9,
+    chess.KING: 0
 }
 
 def material_balance(board):
@@ -19,7 +19,7 @@ def material_balance(board):
     black = 0
 
     for piece in board.piece_map().values():
-        value = piece_values[piece.symbol().lower()]
+        value = PIECE_VALUES[piece.piece_type]
 
         if piece.color:
             white += value
@@ -50,18 +50,205 @@ def center_control(board):
 
 def mobility(board):
     """
-    Function that returns the difference in
-    number of legal moves between White and Black
+    Returns White legal moves - Black legal moves.
     """
-    original_turn = board.turn   # Stores the current turn (White or Black)
-    
-    # Manually switches the turn to count legal moves
-    board.turn = chess.WHITE
-    white_moves = board.legal_moves.count()
+    original_turn = board.turn
 
-    board.turn = chess.BLACK
-    black_moves = board.legal_moves.count()
-    
-    board.turn = original_turn  # Resets the original turn/position
-    
+    try:
+        board.turn = chess.WHITE
+        white_moves = board.legal_moves.count()
+
+        board.turn = chess.BLACK
+        black_moves = board.legal_moves.count()
+    finally:
+        board.turn = original_turn
+
     return white_moves - black_moves
+
+def piece_value_at(board, square):
+    """
+    Helper function for finding the value of a piece on a square
+    """
+
+    piece = board.piece_at(square)
+    if piece is None:
+        return 0
+    return PIECE_VALUES[piece.piece_type]
+
+def cheapest_attacker_value(board: chess.Board, color: chess.Color, square: chess.Square):
+    attackers = board.attackers(color, square)
+    if not attackers:
+        return None
+    return min(piece_value_at(board, attacker_sq) for attacker_sq in attackers)
+
+def cheapest_defender_value(board: chess.Board, color: chess.Color, square: chess.Square):
+    defenders = board.attackers(color, square)
+    if not defenders:
+        return None
+    return min(piece_value_at(board, defender_sq) for defender_sq in defenders)
+
+def tactical_pressure(board: chess.Board) -> float:
+    """
+    The function evaluates the total attacking/tactical pressure on the board
+    If a piece is attacked:
+    1. Hanging/Undefended piece
+    2. Attacking piece vs attacked piece
+    3. Attacking piece vs defender
+    Returns a score relative to the difference in piece values (material) in those scenarios 
+
+    Positive -> Black has more tactically vulnerable material -> Good for White
+    Negative -> White has more tactically vulnerable material -> Good for Black
+    """
+
+    white_squares = (
+        board.pieces(chess.PAWN, chess.WHITE)
+        | board.pieces(chess.KNIGHT, chess.WHITE)
+        | board.pieces(chess.BISHOP, chess.WHITE)
+        | board.pieces(chess.ROOK, chess.WHITE)
+        | board.pieces(chess.QUEEN, chess.WHITE)
+    )
+
+    black_squares = (
+        board.pieces(chess.PAWN, chess.BLACK)
+        | board.pieces(chess.KNIGHT, chess.BLACK)
+        | board.pieces(chess.BISHOP, chess.BLACK)
+        | board.pieces(chess.ROOK, chess.BLACK)
+        | board.pieces(chess.QUEEN, chess.BLACK)
+    )
+
+    def square_pressure(square, color):
+        target_value = piece_value_at(board, square)   # Calls helper function
+        enemy = not color  # Sets the opposite color as comparison
+
+        attacker_val = cheapest_attacker_value(board, enemy, square)
+        defender_val = cheapest_defender_value(board, color, square)
+
+        if attacker_val is None:
+            return 0.0
+
+        # 1. Hanging piece is attacked and undefended
+        if defender_val is None:
+            return float(target_value)
+
+        score = 0.0
+
+        # 2. Less valuable attacker threatening more valuable piece
+        if attacker_val < target_value:
+            score += target_value - attacker_val
+
+        # 3. Inefficient defense: valuable defender vs less valuable attacker
+        if defender_val > attacker_val:
+            # Using a more expensive defender is slightly punished
+            score += 0.5 * (defender_val - attacker_val)
+
+        return min(score, float(target_value))
+
+    white_pressure = sum(square_pressure(sq, chess.WHITE) for sq in white_squares)
+    black_pressure = sum(square_pressure(sq, chess.BLACK) for sq in black_squares)
+
+    return black_pressure - white_pressure
+
+def doubled_pawns(board):
+    """
+    Returns the number of doubled pawns in the positions
+    Positive -> Black has more, good for White
+    Negative-> White has more, good for Black
+    """
+    white_pawns = board.pieces(chess.PAWN, chess.WHITE)
+    black_pawns = board.pieces(chess.PAWN, chess.BLACK)
+
+    def count_doubled(pawns_bb):
+        count = 0
+        files = [0]*8
+
+        for sq in pawns_bb: 
+            file = chess.square_file(sq)
+            files[file]+=1
+
+        for f in files: 
+            if f > 1: 
+                count+=(f-1)  # Substract one because two pawns doubled count as one
+        return count
+
+    white_doubled = count_doubled(white_pawns)
+    black_doubled = count_doubled(black_pawns)
+    return black_doubled - white_doubled
+
+def isolated_pawns(board): 
+    """
+    Returns number of isolated pawns
+    Positive -> Black has more, good for White
+    Negative -> White has more, good for Black
+    """
+    white_pawns = board.pieces(chess.PAWN, chess.WHITE)
+    black_pawns = board.pieces(chess.PAWN, chess.BLACK)
+
+    white_files = set(chess.square_file(sq) for sq in white_pawns)
+    black_files = set(chess.square_file(sq) for sq in black_pawns)
+
+    def count_isolated(pawns_bb, own_files): 
+        count = 0
+        for sq in pawns_bb: 
+            file = chess.square_file(sq)
+
+            neighbor_files = []
+            if file > 0: 
+                neighbor_files.append(file-1)
+            if file < 7: 
+                neighbor_files.append(file+1)
+
+            if not any(f in own_files for f in neighbor_files):
+                count += 1
+
+        return count
+
+    white_isolated = count_isolated(white_pawns, white_files)
+    black_isolated = count_isolated(black_pawns, black_files)
+    return black_isolated - white_isolated
+
+def passed_pawns(board):
+    """
+    Returns number of passed pawns
+    Postive -> White has more, good for White
+    Negative -> Black has more, good for Black
+    """
+    white_pawns = board.pieces(chess.PAWN, chess.WHITE)
+    black_pawns = board.pieces(chess.PAWN, chess.BLACK)
+
+    def is_white_passed(sq):
+        """
+        Evaluates if a White pawn is a passed pawn
+        """
+        file = chess.square_file(sq)
+        rank = chess.square_rank(sq)
+
+        for f in range(max(0, file-1), min(7, file+1)+1):
+            for r in range(rank+1, 8): # Squares in front of White pawn
+                test_sq = chess.square(f, r)
+                if (
+                    board.piece_type_at(test_sq) == chess.PAWN
+                    and board.color_at(test_sq) == chess.BLACK
+                ): 
+                    return False
+        return True
+
+    def is_black_passed(sq):
+        """
+        Evaluates if a Black pawn is a passed pawn
+        """
+        file = chess.square_file(sq)
+        rank = chess.square_rank(sq)
+
+        for f in range(max(0, file-1), min(7, file+1)+1):
+            for r in range(0, rank):  # Square in front of Black pawn
+                test_sq = chess.square(f, r)
+                if (
+                    board.piece_type_at(test_sq) == chess.PAWN 
+                    and board.color_at(test_sq) == chess.WHITE
+                ): 
+                    return False
+        return True
+
+    white_passed = sum(1 for sq in white_pawns if is_white_passed(sq))
+    black_passed = sum(1 for sq in black_pawns if is_black_passed(sq))
+    return white_passed - black_passed
