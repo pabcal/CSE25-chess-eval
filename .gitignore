@@ -23,8 +23,9 @@ Thumbs.db
 # environment files
 .env
 
-# models
-models/*
+# models and results
+results/*.pkl
+!results/.gitkeep
 
 # engine/stockfish
 stockfish/

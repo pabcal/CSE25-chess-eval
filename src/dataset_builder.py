@@ -54,5 +54,5 @@ if __name__ == "__main__":
     build_dataset(
         "data/raw/eliteNov2025Games.pgn",
         "data/processed/test_dataset.csv",
-        max_games=10
+        max_games=1000
     )

@@ -9,7 +9,7 @@ def create_engine():
     return chess.engine.SimpleEngine.popen_uci(ENGINE_PATH)
 
 def evaluate_with_engine(board, engine):
-    info = engine.analyse(board, chess.engine.Limit(depth=8))
+    info = engine.analyse(board, chess.engine.Limit(depth=4))
     score = info["score"].white()
 
     if score.is_mate():

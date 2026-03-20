@@ -35,7 +35,7 @@ if __name__ == "__main__":
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    model = LogisticRegression(max_iter=1000, random_state=42, class_weight="balanced")
+    model = LogisticRegression(max_iter=1000, random_state=42)
     model.fit(X_train_scaled, y_train)
 
     with open(MODEL_PATH, "wb") as f:
